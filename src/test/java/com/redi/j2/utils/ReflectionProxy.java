@@ -8,7 +8,6 @@ public abstract class ReflectionProxy {
 
     private Object target;
 
-
     public ReflectionProxy(Object... args) {
 
         this.target = instantiateTarget(args);
@@ -140,6 +139,19 @@ public abstract class ReflectionProxy {
         try {
             Method m = targetClass.getDeclaredMethod(name, parameterTypes);
             return Modifier.isPublic(m.getModifiers());
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    public boolean isMethodStatic(String name, Class<?>... parameterTypes) {
+        Class<?> targetClass = getTargetClass();
+        if (targetClass == null || name == null) {
+            return false;
+        }
+        try {
+            Method m = targetClass.getDeclaredMethod(name, parameterTypes);
+            return Modifier.isStatic(m.getModifiers());
         } catch (NoSuchMethodException e) {
             return false;
         }
@@ -324,6 +336,33 @@ public abstract class ReflectionProxy {
             Method m = targetClass.getDeclaredMethod(name, parameterTypes);
             return Modifier.isProtected(m.getModifiers());
         } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    public boolean isMethodParameterFromGenericType(String methodName, Class<?>[] parameterTypes, Class<?>[] parameterizedTypes)
+    {
+        Class<?> targetClass = getTargetClass();
+        if (targetClass == null || methodName == null || parameterTypes.length != parameterizedTypes.length) {
+            System.out.println("Wrong input for isMethodParameterFromGenericType");
+            return false;
+        }
+        try {
+            Method m = targetClass.getDeclaredMethod(methodName, parameterTypes);
+            for (int i = 0; i < parameterizedTypes.length; i++) {
+                if (parameterizedTypes[i] == null) {
+                    continue;
+                }
+                if(! (m.getGenericParameterTypes()[i] instanceof ParameterizedType)) {
+                    return false;
+                }
+                ParameterizedType pType = (ParameterizedType)m.getGenericParameterTypes()[i];
+                if (! pType.getActualTypeArguments()[0].equals(parameterizedTypes[i])) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
             return false;
         }
     }
